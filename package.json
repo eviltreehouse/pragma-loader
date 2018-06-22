@@ -1,0 +1,16 @@
+{
+  "name": "webpack-pragma",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "webpack": "webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "webpack": "^3.6.0",
+    "webpack-conditional-loader": "^1.0.12"
+  }
+}
