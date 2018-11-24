@@ -1,18 +1,19 @@
 {
-  "name": "webpack-pragma",
-  "version": "1.0.0",
-  "description": "",
+  "name": "webpack-pragma-loader",
+  "version": "0.3.0",
+  "description": "C-style pragmas for conditional source inclusion w/ a few extra features. Based on https://github.com/caiogondim/webpack-conditional-loader.",
   "main": "index.js",
   "scripts": {
-    "webpack": "webpack",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "webpack --config ./test/webpack.config.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Corey Sharrah <corey@eviltreehouse.com>",
+  "license": "MIT",
   "dependencies": {
-    "loader-utils": "^1.1.0",
+    "loader-utils": "^1.1.0"
+  },
+  "devDependencies": {
     "uglifyjs-webpack-plugin": "^1.2.6",
-    "webpack": "^3.6.0",
-    "webpack-conditional-loader": "^1.0.12"
-  }
+    "loader-utils": "^1.1.0",
+    "webpack": "^3.12.0"
+  }  
 }
