@@ -1,6 +1,6 @@
 {
   "name": "pragma-loader",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "C-style pragmas for conditional source inclusion w/ a few extra features. Based on https://github.com/caiogondim/webpack-conditional-loader.",
   "main": "index.js",
   "scripts": {
@@ -15,5 +15,5 @@
     "uglifyjs-webpack-plugin": "^1.2.6",
     "loader-utils": "^1.1.0",
     "webpack": "^3.12.0"
-  }  
+  }
 }
