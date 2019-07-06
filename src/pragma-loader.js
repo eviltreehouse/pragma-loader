@@ -4,7 +4,7 @@ const loaderUtils = require('loader-utils');
 
 const OPTKEY_USEENV = '$env';
 const OPTKEY_DELETE = '$delete';
-const LINE_REMOVE = "/* @deleteme */";
+const LINE_REMOVE = "/* @deleteme-pragma-loader! */";
 
 var deleteFilteredBlocks = false;
 
@@ -15,16 +15,33 @@ function getPredicate(line) {
 function searchBlocks(sourceByLine) {
   const blocks = [];
   let current = 0;
+  let openCurrent = 0;
+
   const startBlock = /\/\/\s+#if\s+.*/;
+  const elseBlock  = /\/\/\s+#else\s*$/;
   const endBlock = /\/\/\s+#endif\s*$/;
 
   while (current < sourceByLine.length) {
     if (startBlock.test(sourceByLine[current])) {
       blocks[current] = {
         type: 'begin',
-        predicate: getPredicate(sourceByLine[current])
+        predicate: getPredicate(sourceByLine[current]),
+        hasElse: false
       };
 
+      openCurrent = current;
+      current += 1;
+      continue;
+    }
+
+    // Turn this into its own begin/end
+    if (elseBlock.test(sourceByLine[current])) {
+      blocks[openCurrent].hasElse = true;
+
+      blocks[current] = {
+        'type': 'else'
+      };
+      
       current += 1;
       continue;
     }
@@ -53,13 +70,27 @@ function getTruthyBlocks(blocks, loader_opts) {
 
   while (i < truthyBlocks.length) {
     if (truthyBlocks[i] && truthyBlocks[i].type === 'begin') {
-      if (eval(truthyBlocks[i].predicate)) {
+      let predCheck = eval(truthyBlocks[i].predicate);
+
+      if (truthyBlocks[i].hasElse) {
+        if (predCheck) { // (IF == true - delete IF block)
+          console.log('IF condition is true, deleting main block');
+          action = 'deleteNextElseBlock';
+        } else {          // (IF === false - delete ELSE block)
+          console.log('IF condition is false, deleting else block');
+          truthyBlocks[i] = undefined;
+          action = 'deleteNextEndBlock';
+        }
+      } else if (predCheck) {
         truthyBlocks[i] = undefined;
         action = 'deleteNextEndBlock';
       }
-    }
 
-    if (truthyBlocks[i] && truthyBlocks[i].type === 'end' && action === 'deleteNextEndBlock') {
+    } else if (truthyBlocks[i] && truthyBlocks.type === 'else' && action === 'deleteNextElseBlock') {
+      truthyBlocks[i] = undefined;
+      action = 'deleteNextEndBlock';
+
+    } else if (truthyBlocks[i] && truthyBlocks[i].type === 'end' && action === 'deleteNextEndBlock') {
       truthyBlocks[i] = undefined;
       action = '';
     }
@@ -79,7 +110,13 @@ function commentCodeInsideBlocks(sourceByLine, blocks) {
   while (i < sourceByLine.length) {
     currentBlock = blocks[i];
 
-    if (currentBlock && currentBlock.type === 'begin') {
+    if (currentBlock) {
+      console.log('\t\t', JSON.stringify(currentBlock), '::::', sourceByLine[i]);
+    } else {
+      console.log('\t\t', '-', '::::', sourceByLine[i]);
+    }
+
+    if (currentBlock && (currentBlock.type === 'begin' || currentBlock.type === 'else')) {
       if (deleteFilteredBlocks) sourceByLineTransformed[i] = LINE_REMOVE;
       action = deleteFilteredBlocks ? 'deleteLine' : 'commentLine';
       i += 1;
@@ -98,6 +135,7 @@ function commentCodeInsideBlocks(sourceByLine, blocks) {
     } else if (action === 'deleteLine') {
       sourceByLineTransformed[i] = LINE_REMOVE;
     }
+    console.log(sourceByLine[i], ' => ', sourceByLineTransformed[i]);
 
     i += 1;
   }
@@ -132,7 +170,6 @@ function processPragmaOpts(inOpts) {
   }
 
   for (var k in inOpts) outOpts[k] = inOpts[k];
-
   return outOpts;
 }
 

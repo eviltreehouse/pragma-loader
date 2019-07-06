@@ -4,7 +4,7 @@
   "description": "C-style pragmas for conditional source inclusion w/ a few extra features. Based on https://github.com/caiogondim/webpack-conditional-loader.",
   "main": "index.js",
   "scripts": {
-    "test": "webpack --config ./test/webpack.config.js"
+    "test": "webpack --config ./test/webpack.config.js && echo '\n\n==================' && node ./test.bundle.js"
   },
   "author": "Corey Sharrah <corey@eviltreehouse.com>",
   "license": "MIT",
