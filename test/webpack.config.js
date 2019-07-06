@@ -1,6 +1,6 @@
 const path = require('path');
 
-const BUILD_WITH_DEBUG = false;
+const BUILD_WITH_DEBUG = true;
 
 const PLUGINS = [];
 
