@@ -15,7 +15,7 @@ function getPredicate(line) {
 function searchBlocks(sourceByLine) {
   const blocks = [];
   let current = 0;
-  let openCurrent = 0;
+  let openCurrent = null;
 
   const startBlock = /\/\/\s+#if\s+.*/;
   const elseBlock  = /\/\/\s+#else\s*$/;
@@ -38,7 +38,8 @@ function searchBlocks(sourceByLine) {
       blocks[openCurrent].hasElse = true; /** @todo not sure if we need this... */
 
       blocks[current] = {
-        'type': 'else'
+        'type': 'else',
+        'prev_begin': openCurrent
       };
       
       current += 1;
@@ -50,6 +51,7 @@ function searchBlocks(sourceByLine) {
         type: 'end'
       };
 
+      openCurrent = null;
       current += 1;
       continue;
     }
@@ -73,11 +75,8 @@ function getTruthyBlocks(blocks, loader_opts) {
 
       if (truthyBlocks[i].hasElse) {
         if (predCheck) { // (IF == true - delete IF block)
-          // console.log('IF condition is true, deleting main block');
           truthyBlocks[i] = undefined;
-          action = 'deleteNextEndBlock';
         } else {          // (IF === false - delete ELSE block)
-          // console.log('IF condition is false, deleting else block');
           action = 'deleteNextElseBlock';
         }
       } else if (predCheck) {
@@ -86,8 +85,10 @@ function getTruthyBlocks(blocks, loader_opts) {
       }
 
     } else if (truthyBlocks[i] && truthyBlocks[i].type === 'else' && action === 'deleteNextElseBlock') {
-      truthyBlocks[i] = undefined;
+      truthyBlocks[i].type = 'end'; // convert to END
+      // truthyBlocks[i] = undefined;
       // action = 'deleteNextEndBlock';
+      action = '';
 
     } else if (truthyBlocks[i] && truthyBlocks[i].type === 'end' && action === 'deleteNextEndBlock') {
       truthyBlocks[i] = undefined;
@@ -109,27 +110,14 @@ function commentCodeInsideBlocks(sourceByLine, blocks) {
   while (i < sourceByLine.length) {
     currentBlock = blocks[i];
 
-    if (currentBlock) {
-      console.log(justifyString(
-        `{ type: ${currentBlock.type.toUpperCase()}, hasElse: ${currentBlock.hasElse ? "Y" : "N"} }`, 45), 
-        '::',
-        justifyString(sourceByLine[i], 50)
-        );
-    } else {
-      console.log(justifyString('-', 45),
-      '::',
-      justifyString(sourceByLine[i], 50)
-      );
-    }
-
-    if (currentBlock && (currentBlock.type === 'begin')) {
+    if (currentBlock && (currentBlock.type === 'begin' || currentBlock.type === 'else')) {
       if (deleteFilteredBlocks) sourceByLineTransformed[i] = LINE_REMOVE;
       action = deleteFilteredBlocks ? 'deleteLine' : 'commentLine';
       i += 1;
       continue;
     }
 
-    if (currentBlock && (currentBlock.type === 'end' || currentBlock.type === 'else')) {
+    if (currentBlock && currentBlock.type === 'end') {
       if (deleteFilteredBlocks) sourceByLineTransformed[i] = LINE_REMOVE;
       action = '';
       i += 1;
@@ -141,13 +129,6 @@ function commentCodeInsideBlocks(sourceByLine, blocks) {
     } else if (action === 'deleteLine') {
       sourceByLineTransformed[i] = LINE_REMOVE;
     }
-
-    if (sourceByLine[i] != sourceByLineTransformed[i]) console.log(
-      //justifyString(sourceByLine[i], 45), 
-      justifyString('', 48),
-      '=>', 
-      justifyString(sourceByLineTransformed[i], 50)
-    );
 
     i += 1;
   }
@@ -183,12 +164,6 @@ function processPragmaOpts(inOpts) {
 
   for (var k in inOpts) outOpts[k] = inOpts[k];
   return outOpts;
-}
-
-function justifyString(s, targetSiz) {
-  if (! parseInt(targetSiz)) targetSiz = 0;
-  let padding = Math.max(0, targetSiz - s.length);
-  return s + " ".repeat(padding);
 }
 
 module.exports = function (source) {
